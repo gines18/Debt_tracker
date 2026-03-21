@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Routes anyone can visit without being logged in
+const PUBLIC_ROUTES = ["/", "/landing", "/login"];
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -24,17 +27,22 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+  const { pathname } = request.nextUrl;
 
-  if (!user && !isLoginPage) {
+  const isPublic    = PUBLIC_ROUTES.includes(pathname);
+  const isLoginPage = pathname.startsWith("/login");
+
+  // Not logged in + trying to access a protected page → send to /login
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
+  // Logged in + on login page → send to /dashboard
   if (user && isLoginPage) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
