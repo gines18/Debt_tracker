@@ -191,7 +191,7 @@ export default function BudgetTracker() {
   const key = monthKey(year, month);
 
   const monthData: MonthData = allData[key] ?? {
-    expenses: DEFAULT_EXPENSES.map(e => ({ ...e })),
+    expenses: [],
     paidIds:  [],
   };
 
@@ -203,10 +203,7 @@ export default function BudgetTracker() {
   useEffect(() => {
     if (!user || dbLoading) return;
     if (!allData[key]) {
-      const newData: MonthData = {
-        expenses: DEFAULT_EXPENSES.map(e => ({ ...e })),
-        paidIds:  [],
-      };
+      const newData: MonthData = { expenses: [], paidIds: [] };
       setAllData(prev => ({ ...prev, [key]: newData }));
       saveMonth(key, newData);
     }
@@ -628,6 +625,6 @@ const s: Record<string, React.CSSProperties> = {
   select:       { width: "100%", padding: "8px 12px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: "#e5e4e0", fontSize: 14, fontFamily: "inherit", background: "#fff", outline: "none", boxSizing: "border-box" as const },
   formError:    { fontSize: 12, color: "#D85A30", marginBottom: "0.75rem", fontFamily: "monospace" },
   modalActions: { display: "flex", gap: 8, justifyContent: "flex-end", marginTop: "1.25rem" },
-  btnCancel:    { fontSize: 13, padding: "7px 16px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: "#e5e4e0", background: "#fff", cursor: "pointer", fontFamily: "inherit" },
+  btnCancel:    { fontSize: 13, padding: "7px 16px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: "#ccc", background: "#f0f0f0", color: "#333", cursor: "pointer", fontFamily: "inherit" },
   btnSubmit:    { fontSize: 13, padding: "7px 16px", borderRadius: 8, borderWidth: 0, background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 },
 };
