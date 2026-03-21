@@ -187,7 +187,7 @@ export default function LandingPage() {
         }} />
 
         {/* Glow */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10"
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 md:w-96 md:h-96 rounded-full opacity-10"
           style={{ background: "radial-gradient(circle, #10b981, transparent 70%)" }} />
 
         <div className="relative z-10 text-center max-w-4xl mx-auto">
@@ -195,7 +195,7 @@ export default function LandingPage() {
             A true story about money
           </div>
 
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black leading-none tracking-tighter mb-6"
+          <h1 className="text-4xl md:text-7xl lg:text-8xl font-black leading-none tracking-tighter mb-6"
             style={{ fontFamily: "Georgia, serif" }}>
             He owed
             <br />
@@ -229,17 +229,17 @@ export default function LandingPage() {
       </section>
 
       {/* ── Chapter 1: The Problem ── */}
-      <section id="story" className="py-32 px-6">
+      <section id="story" className="py-16 md:py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <Reveal>
             <div className="text-emerald-400 font-mono text-xs uppercase tracking-[0.3em] mb-4">Chapter 01</div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-16 leading-none">
+            <h2 className="text-3xl md:text-6xl font-black tracking-tighter mb-8 md:mb-16 leading-none">
               The spiral<br />
               <span className="text-stone-500">nobody talks about.</span>
             </h2>
           </Reveal>
 
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div className="space-y-6">
               {[
                 { quote: "I had two bank accounts — a Polish one and a British one. Both in the red.", delay: 0 },
@@ -292,17 +292,17 @@ export default function LandingPage() {
       </div>
 
       {/* ── Chapter 2: The Turning Point ── */}
-      <section className="py-32 px-6 bg-stone-900/30">
+      <section className="py-16 md:py-32 px-6 bg-stone-900/30">
         <div className="max-w-6xl mx-auto">
           <Reveal>
             <div className="text-emerald-400 font-mono text-xs uppercase tracking-[0.3em] mb-4">Chapter 02</div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-16 leading-none">
+            <h2 className="text-3xl md:text-6xl font-black tracking-tighter mb-8 md:mb-16 leading-none">
               £500 a month.<br />
               <span className="text-emerald-400">That was the plan.</span>
             </h2>
           </Reveal>
 
-          <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <Reveal from="left">
               <BudgetCardMock />
             </Reveal>
@@ -327,7 +327,7 @@ export default function LandingPage() {
                     { label: "Sleep quality", val: "better", color: "text-emerald-400" },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-stone-900 rounded-xl p-4 border border-stone-800">
-                      <div className={`text-2xl font-black font-mono ${stat.color}`}>{stat.val}</div>
+                      <div className={`text-xl md:text-2xl font-black font-mono ${stat.color}`}>{stat.val}</div>
                       <div className="text-stone-500 text-xs mt-1">{stat.label}</div>
                     </div>
                   ))}
@@ -339,11 +339,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── Chapter 3: The Numbers ── */}
-      <section className="py-32 px-6">
+      <section className="py-16 md:py-32 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <Reveal>
             <div className="text-emerald-400 font-mono text-xs uppercase tracking-[0.3em] mb-4">Chapter 03</div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6">
+            <h2 className="text-3xl md:text-6xl font-black tracking-tighter mb-6">
               Watch the debt<br />disappear.
             </h2>
             <p className="text-stone-400 text-lg mb-16 max-w-xl mx-auto">
@@ -355,7 +355,7 @@ export default function LandingPage() {
             <DebtMeter />
           </Reveal>
 
-          <div className="grid grid-cols-3 gap-6 mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
             {[
               { label: "Months to clear debt", value: 17, suffix: "mo" },
               { label: "Saved alongside debt", value: 2550, prefix: "£" },
@@ -363,7 +363,7 @@ export default function LandingPage() {
             ].map((stat) => (
               <Reveal key={stat.label} delay={100}>
                 <div className="bg-stone-900 rounded-2xl p-6 border border-stone-800">
-                  <div className="text-4xl font-black font-mono text-emerald-400">
+                  <div className="text-3xl md:text-4xl font-black font-mono text-emerald-400">
                     <Counter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
                   </div>
                   <div className="text-stone-500 text-sm mt-2">{stat.label}</div>
@@ -375,12 +375,12 @@ export default function LandingPage() {
       </section>
 
       {/* ── Chapter 4: The Quote ── */}
-      <section className="py-32 px-6 bg-emerald-950/20 border-y border-emerald-900/30">
+      <section className="py-16 md:py-32 px-6 bg-emerald-950/20 border-y border-emerald-900/30">
         <div className="max-w-4xl mx-auto">
           <Reveal>
             <div className="text-center">
               <div className="text-emerald-800 text-8xl font-serif leading-none mb-6">"</div>
-              <blockquote className="text-3xl md:text-4xl font-black leading-tight tracking-tight mb-8" style={{ fontFamily: "Georgia, serif" }}>
+              <blockquote className="text-2xl md:text-4xl font-black leading-tight tracking-tight mb-8" style={{ fontFamily: "Georgia, serif" }}>
                 I didn't earn more money. I didn't win anything. I just finally knew{" "}
                 <span className="text-emerald-400">where every pound was going.</span>
               </blockquote>
@@ -391,18 +391,18 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ── */}
-      <section className="py-32 px-6">
+      <section className="py-16 md:py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <Reveal>
             <div className="text-center mb-20">
               <div className="text-emerald-400 font-mono text-xs uppercase tracking-[0.3em] mb-4">The tool</div>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+              <h2 className="text-3xl md:text-5xl font-black tracking-tighter">
                 Simple. Honest. Yours.
               </h2>
             </div>
           </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {[
               {
                 icon: "📅",
@@ -454,7 +454,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="py-32 px-6 relative overflow-hidden">
+      <section className="py-16 md:py-32 px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10"
           style={{ background: "radial-gradient(ellipse at center, #10b981 0%, transparent 70%)" }} />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
