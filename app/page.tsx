@@ -25,7 +25,7 @@ type MonthData = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const INCOME = 1540;
+const DEFAULT_income = 1540;
 
 const DEFAULT_EXPENSES: Expense[] = [
   { id: "rent",      name: "Rent",               amount: 60,    cat: "Fixed"      },
@@ -82,6 +82,10 @@ export default function BudgetTracker() {
   const [dbLoading, setDbLoading] = useState(true);
   const [syncing,   setSyncing]   = useState(false);
 
+  const [income,        setIncome]        = useState(DEFAULT_income);
+  const [editingIncome, setEditingIncome] = useState(false);
+  const [incomeInput,   setIncomeInput]   = useState("");
+
   const [activeCat,     setActiveCat]     = useState<Category | "All">("All");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [modal, setModal] = useState<{ open: boolean; mode: "add"|"edit"; expense: Expense|null }>({
@@ -96,9 +100,15 @@ export default function BudgetTracker() {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      const saved = data.user?.user_metadata?.monthly_income;
+      if (saved) setIncome(Number(saved));
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
+      const saved = session?.user?.user_metadata?.monthly_income;
+      if (saved) setIncome(Number(saved));
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -106,6 +116,25 @@ export default function BudgetTracker() {
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/login";
+  }
+
+  async function saveIncome(val: number) {
+    if (isNaN(val) || val <= 0) return;
+    setIncome(val);
+    setEditingIncome(false);
+    setSyncing(true);
+    try {
+      await supabase.auth.updateUser({ data: { monthly_income: val } });
+    } catch (err) {
+      console.error("Income save error:", err);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  function startEditIncome() {
+    setIncomeInput(String(income));
+    setEditingIncome(true);
   }
 
   // ── Load data from Supabase ───────────────────────────────────────────────
@@ -279,9 +308,9 @@ export default function BudgetTracker() {
 
   const totalBudgeted = expenses.reduce((s, e) => s + e.amount, 0);
   const paidTotal     = expenses.filter(e => paidIds.has(e.id)).reduce((s, e) => s + e.amount, 0);
-  const remaining     = INCOME - paidTotal;
-  const unallocated   = INCOME - totalBudgeted;
-  const pct           = Math.min(Math.round((paidTotal / INCOME) * 100), 100);
+  const remaining     = income - paidTotal;
+  const unallocated   = income - totalBudgeted;
+  const pct           = Math.min(Math.round((paidTotal / income) * 100), 100);
   const progressColor = pct > 85 ? "#D85A30" : pct > 60 ? "#BA7517" : "#1D9E75";
 
   const catGroups: Partial<Record<Category, number>> = {};
@@ -390,7 +419,34 @@ export default function BudgetTracker() {
       {/* ── Banner ── */}
       <div style={s.banner}>
         <div>
-          <div style={s.bannerTitle}>Monthly income: £1,540.00</div>
+          <div style={{ ...s.bannerTitle, display: "flex", alignItems: "center", gap: 8 }}>
+            Monthly income:
+            {editingIncome ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ fontSize: 13, color: "#0F6E56" }}>£</span>
+                <input
+                  autoFocus
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={incomeInput}
+                  onChange={e => setIncomeInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") saveIncome(parseFloat(incomeInput));
+                    if (e.key === "Escape") setEditingIncome(false);
+                  }}
+                  style={{ width: 90, padding: "2px 6px", borderRadius: 6, borderWidth: 1, borderStyle: "solid", borderColor: "#9FE1CB", fontSize: 13, fontFamily: "monospace", outline: "none", background: "#fff", color: "#0F6E56" }}
+                />
+                <button onClick={() => saveIncome(parseFloat(incomeInput))} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, borderWidth: 0, background: "#0F6E56", color: "#fff", cursor: "pointer", fontFamily: "monospace" }}>Save</button>
+                <button onClick={() => setEditingIncome(false)} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, borderWidth: 0, background: "transparent", color: "#1D9E75", cursor: "pointer", fontFamily: "monospace" }}>Cancel</button>
+              </span>
+            ) : (
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span>{fmt(income)}</span>
+                <button onClick={startEditIncome} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, borderWidth: 0, background: "#9FE1CB", color: "#0F6E56", cursor: "pointer", fontFamily: "monospace" }}>edit</button>
+              </span>
+            )}
+          </div>
           <div style={s.bannerSub}>
             {unallocated >= 0
               ? `£${unallocated.toFixed(2)} unallocated · mark expenses paid to track`
@@ -403,8 +459,8 @@ export default function BudgetTracker() {
       {/* ── Summary grid ── */}
       <div style={s.summaryGrid}>
         {[
-          { label: "Income",    val: fmt(INCOME),        color: "#1a1a1a" },
-          { label: "Budgeted",  val: fmt(totalBudgeted), color: totalBudgeted > INCOME ? "#D85A30" : "#1a1a1a" },
+          { label: "Income",    val: fmt(income),        color: "#1a1a1a" },
+          { label: "Budgeted",  val: fmt(totalBudgeted), color: totalBudgeted > income ? "#D85A30" : "#1a1a1a" },
           { label: "Paid out",  val: fmt(paidTotal),     color: "#D85A30" },
           { label: "Remaining", val: fmt(remaining),     color: remaining < 0 ? "#D85A30" : "#0F6E56" },
         ].map(m => (
@@ -490,7 +546,7 @@ export default function BudgetTracker() {
               <span style={{ ...s.legendDot, background: CAT_COLORS[cat] }} />
               <span style={s.legendName}>{cat}</span>
               <span style={s.legendAmount}>{fmt(catGroups[cat]!)}</span>
-              <span style={s.legendPct}>{Math.round((catGroups[cat]! / INCOME) * 100)}%</span>
+              <span style={s.legendPct}>{Math.round((catGroups[cat]! / income) * 100)}%</span>
             </div>
           ))}
         </div>
