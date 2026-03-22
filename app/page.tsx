@@ -381,17 +381,25 @@ export default function BudgetTracker() {
       {/* ── Header ── */}
       <div style={s.topbar}>
         <div style={s.logo}>budget<span style={{ color: "#1D9E75" }}>.</span>tracker</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button style={s.signOutBtn} onClick={signOut}>Sign out</button>
+        <div style={s.userArea}>
+            <span style={s.userEmail}>{user?.email}</span>
+          </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+            rowGap: 6,
+          }}
+        >
           {syncing && <span style={s.syncPill}>saving…</span>}
           {isCurrentMonth && <span style={s.todayPill}>Today</span>}
           <div style={s.monthNav}>
             <button style={s.navBtn} onClick={prevMonth}>‹</button>
             <span style={s.navLabel}>{MONTH_NAMES[month]} {year}</span>
             <button style={s.navBtn} onClick={nextMonth}>›</button>
-          </div>
-          <div style={s.userArea}>
-            <span style={s.userEmail}>{user?.email}</span>
-            <button style={s.signOutBtn} onClick={signOut}>Sign out</button>
           </div>
         </div>
       </div>
