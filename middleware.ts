@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Only these routes are public (no login required)
-const PUBLIC_ROUTES = ["/landing", "/login"];
+const PUBLIC_ROUTES = ["/landing", "/login", "/test"];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
