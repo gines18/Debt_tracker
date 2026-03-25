@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     title: "Budget Tracker — Take Control of Your Money",
     description: "Free budget tracker. Track expenses month by month and get out of debt.",
   },
+  verification: {
+    google: "BUjNwdK69G_gYTohGCHTUL9kZCE2juOmQbOZFsXttfs",
+  },
 };
 
 export default function LandingLayout({
