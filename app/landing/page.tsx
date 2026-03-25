@@ -1,23 +1,5 @@
 "use client";
 
-export const metadata = {
-  title: "Budget Tracker — Take Control of Your Money",
-  description: "Free budget tracker app. Track expenses, manage debt, and plan your monthly finances. Used by real people to get out of debt.",
-  keywords: "budget tracker, expense tracker, debt management, monthly budget, personal finance",
-  openGraph: {
-    title: "Budget Tracker — Take Control of Your Money",
-    description: "Free budget tracker. Track expenses month by month and get out of debt.",
-    url: "https://debtremover.co.uk/",
-    siteName: "Budget Tracker",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Budget Tracker — Take Control of Your Money",
-    description: "Free budget tracker. Track expenses month by month and get out of debt.",
-  },
-};
-
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
