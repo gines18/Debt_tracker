@@ -1,10 +1,19 @@
-export default function robots() {
-    return {
-      rules: {
+import { MetadataRoute } from "next";
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: [
+      {
         userAgent: "*",
         allow: ["/", "/landing"],
-        disallow: ["/dashboard", "/login"],
+        disallow: [
+          "/dashboard",
+          "/login",
+          "/register",
+          "/api/",
+        ],
       },
-      sitemap: "https://debtremover.co.uk/sitemap.xml",
-    };
-  }
+    ],
+    sitemap: "https://debtremover.co.uk/sitemap.xml",
+  };
+}
