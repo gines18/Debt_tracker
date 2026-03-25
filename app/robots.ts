@@ -6,12 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/", "/landing"],
-        disallow: [
-          "/dashboard",
-          "/login",
-          "/register",
-          "/api/",
-        ],
+        disallow: ["/dashboard", "/login", "/register", "/api/"],
       },
     ],
     sitemap: "https://debtremover.co.uk/sitemap.xml",
