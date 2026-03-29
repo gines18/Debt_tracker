@@ -102,8 +102,11 @@ export default function BudgetTracker() {
   const [incomeInput,   setIncomeInput]   = useState("");
 
   const [activeCat,     setActiveCat]     = useState<Category | "All">("All");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDebtHelpOpen, setIsDebtHelpOpen] = useState(false);
+  const [copyMsg, setCopyMsg] = useState("");
+  const [copyConfirmOpen, setCopyConfirmOpen] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; mode: "add"|"edit"; expense: Expense|null }>({
     open: false, mode: "add", expense: null,
   });
@@ -112,6 +115,7 @@ export default function BudgetTracker() {
 
   const donutRef      = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<Chart | null>(null);
+  const copyMsgTimerRef = useRef<number | null>(null);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -153,6 +157,12 @@ export default function BudgetTracker() {
     setEditingIncome(true);
   }
 
+  function showCopyMessage(msg: string) {
+    if (copyMsgTimerRef.current) window.clearTimeout(copyMsgTimerRef.current);
+    setCopyMsg(msg);
+    copyMsgTimerRef.current = window.setTimeout(() => setCopyMsg(""), 2000);
+  }
+
   // ── Load data from Supabase ───────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
@@ -179,6 +189,12 @@ export default function BudgetTracker() {
   }, [user]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    return () => {
+      if (copyMsgTimerRef.current) window.clearTimeout(copyMsgTimerRef.current);
+    };
+  }, []);
 
   // ── Save month to Supabase (upsert) ───────────────────────────────────────
 
@@ -302,6 +318,38 @@ export default function BudgetTracker() {
     next.delete(id);
     updateMonth({ expenses: expenses.filter(e => e.id !== id), paidIds: [...next] });
     setDeleteConfirm(null);
+  }
+
+  function deleteAllExpenses() {
+    updateMonth({ expenses: [], paidIds: [] });
+    setConfirmDelete(false);
+  }
+
+  function copyFromPreviousMonth(forceOverwrite = false) {
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const prevKey = monthKey(prevYear, prevMonth);
+    const prevData = allData[prevKey];
+
+    if (!prevData || prevData.expenses.length === 0) {
+      setCopyConfirmOpen(false);
+      showCopyMessage("No data in previous month");
+      return;
+    }
+
+    if (expenses.length > 0 && !forceOverwrite) {
+      if (copyMsgTimerRef.current) window.clearTimeout(copyMsgTimerRef.current);
+      setCopyMsg("Current month already has expenses — overwrite?");
+      setCopyConfirmOpen(true);
+      return;
+    }
+
+    const copiedExpenses = prevData.expenses.map(e => ({ ...e, id: uid() }));
+    const newData: MonthData = { expenses: copiedExpenses, paidIds: [] };
+    setAllData(prev => ({ ...prev, [key]: newData }));
+    saveMonth(key, newData);
+    setCopyConfirmOpen(false);
+    showCopyMessage("Copied!");
   }
 
   // ── Month navigation ──────────────────────────────────────────────────────
@@ -474,7 +522,21 @@ export default function BudgetTracker() {
               : `⚠ Over budget by £${Math.abs(unallocated).toFixed(2)}`}
           </div>
         </div>
-        <button style={s.resetBtn} onClick={resetPaid}>reset paid</button>
+        <div style={s.bannerActions}>
+          <button style={s.copyBtn} onClick={() => copyFromPreviousMonth()}>copy last month</button>
+          <button style={s.resetBtn} onClick={resetPaid}>reset paid</button>
+          {copyMsg && (
+            <span style={s.copyMsg}>
+              {copyMsg}
+              {copyConfirmOpen && (
+                <span style={s.copyConfirmActions}>
+                  <button style={s.copyYesBtn} onClick={() => copyFromPreviousMonth(true)}>Yes</button>
+                  <button style={s.copyNoBtn} onClick={() => { setCopyConfirmOpen(false); setCopyMsg(""); }}>No</button>
+                </span>
+              )}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Summary grid ── */}
@@ -510,7 +572,17 @@ export default function BudgetTracker() {
             </button>
           ))}
         </div>
-        <button style={s.addBtn} onClick={openAdd}>+ Add</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {confirmDelete ? (
+            <>
+              <button style={s.confirmDeleteBtn} onClick={deleteAllExpenses}>Confirm delete</button>
+              <button style={s.btnUndo} onClick={() => setConfirmDelete(false)}>Cancel</button>
+            </>
+          ) : (
+            <button style={s.deleteAllBtn} onClick={() => setConfirmDelete(true)}>Delete all</button>
+          )}
+          <button style={s.addBtn} onClick={openAdd}>+ Add</button>
+        </div>
       </div>
 
       {/* ── Expense list ── */}
@@ -635,7 +707,13 @@ const s: Record<string, React.CSSProperties> = {
   banner:     { background: "#E1F5EE", borderWidth: 1, borderStyle: "solid", borderColor: "#9FE1CB", borderRadius: 10, padding: "12px 16px", marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" },
   bannerTitle:{ fontSize: 13, color: "#0F6E56", fontWeight: 600 },
   bannerSub:  { fontSize: 11, color: "#1D9E75", fontFamily: "monospace", marginTop: 2 },
+  bannerActions: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const, justifyContent: "flex-end" as const },
+  copyBtn:    { fontSize: 11, color: "#378ADD", background: "none", borderWidth: 0, cursor: "pointer", fontFamily: "monospace", textDecoration: "underline" },
   resetBtn:   { fontSize: 11, color: "#999", background: "none", borderWidth: 0, cursor: "pointer", fontFamily: "monospace", textDecoration: "underline" },
+  copyMsg:    { fontSize: 11, color: "#5f5f5f", fontFamily: "monospace", display: "inline-flex", alignItems: "center", gap: 6 },
+  copyConfirmActions: { display: "inline-flex", alignItems: "center", gap: 4 },
+  copyYesBtn: { fontSize: 11, padding: "2px 7px", borderRadius: 6, borderWidth: 0, background: "#378ADD", color: "#fff", cursor: "pointer", fontFamily: "monospace" },
+  copyNoBtn:  { fontSize: 11, padding: "2px 7px", borderRadius: 6, borderWidth: 0, background: "#efefeb", color: "#666", cursor: "pointer", fontFamily: "monospace" },
   summaryGrid:{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 8, marginBottom: "1.5rem" },
   metric:     { background: "#f7f6f3", borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
   metricLabel:{ fontSize: 10, color: "#999", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 },
@@ -658,6 +736,8 @@ const s: Record<string, React.CSSProperties> = {
   btnPaid:        { background: "#E1F5EE", color: "#0F6E56" },
   btnUndo:        { background: "#efefeb", color: "#999", fontSize: 11, padding: "3px 8px", borderRadius: 6, borderWidth: 0, cursor: "pointer", fontFamily: "monospace" },
   btnIcon:        { fontSize: 12, padding: "3px 7px", borderRadius: 6, borderWidth: 0, background: "#f7f6f3", color: "#555", cursor: "pointer" },
+  deleteAllBtn:   { fontSize: 12, padding: "3px 7px", borderRadius: 6, borderWidth: 0, background: "#FAECE7", color: "#D85A30", cursor: "pointer" },
+  confirmDeleteBtn: { fontSize: 11, padding: "3px 8px", borderRadius: 6, borderWidth: 0, background: "#D85A30", color: "#fff", cursor: "pointer", fontFamily: "monospace" },
   btnDelete:      { fontSize: 11, padding: "3px 8px", borderRadius: 6, borderWidth: 0, background: "#FAECE7", color: "#D85A30", cursor: "pointer", fontFamily: "monospace" },
   emptyState:     { fontSize: 13, color: "#999", padding: "1rem 0", textAlign: "center" as const },
   emptyAdd:       { background: "none", borderWidth: 0, color: "#1D9E75", cursor: "pointer", fontFamily: "monospace", fontSize: 13 },
