@@ -11,11 +11,21 @@ Chart.register(ArcElement, DoughnutController, Tooltip, Legend);
 
 type Category = "Fixed" | "Essentials" | "Debt" | "Savings" | "Personal";
 
+type ExpenseCurrency = "GBP" | "PLN" | "EUR" | "USD";
+
+const CURRENCY_SYMBOLS: Record<ExpenseCurrency, string> = {
+  GBP: "£",
+  PLN: "zł",
+  EUR: "€",
+  USD: "$",
+};
+
 interface Expense {
   id: string;
   name: string;
   amount: number;
   cat: Category;
+  currency?: ExpenseCurrency;
 }
 
 type MonthData = {
@@ -46,7 +56,7 @@ const DEFAULT_EXPENSES: Expense[] = [
   { id: "groceries", name: "Groceries",           amount: 300,   cat: "Essentials" },
   { id: "bus",       name: "Bus ticket",          amount: 61,    cat: "Essentials" },
   { id: "uk_bank",   name: "British bank (debt)", amount: 250,   cat: "Debt"       },
-  { id: "pl_bank",   name: "Polish bank (debt)",  amount: 250,   cat: "Debt"       },
+  { id: "pl_bank",   name: "Polish bank (debt)",  amount: 250,   cat: "Debt",      currency: "PLN" },
   { id: "buffer",    name: "Emergency buffer",    amount: 150,   cat: "Savings"    },
   { id: "fun",       name: "Fun / wants",         amount: 140.5, cat: "Personal"   },
 ];
@@ -68,6 +78,13 @@ const CAT_ICONS: Record<Category, string> = {
   Fixed: "🏠", Essentials: "🛒", Debt: "💳", Savings: "🏦", Personal: "✨",
 };
 
+const EXCHANGE_RATES: Record<string, number> = {
+  GBP: 1,
+  PLN: 0.19,   // 1 PLN = £0.19
+  EUR: 1.17,   // 1 EUR = £1.17
+  USD: 0.79,   // 1 USD = £0.79
+};
+
 const DEBT_HELP_ORGS: DebtHelpOrg[] = [
   { name: "StepChange Debt Charity", website: "https://www.stepchange.org", phone: "0800 138 1111", description: "Free debt advice" },
   { name: "National Debtline", website: "https://www.nationaldebtline.org", phone: "0808 808 4000", description: "Free advice for people in England, Wales & Scotland" },
@@ -79,9 +96,57 @@ const DEBT_HELP_ORGS: DebtHelpOrg[] = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmt(n: number) { return "£" + n.toFixed(2).replace(/\.00$/, ""); }
+
+function fmtDisplay(amount: number, displayCurrency: ExpenseCurrency): string {
+  const n = amount.toFixed(2).replace(/\.00$/, "");
+  switch (displayCurrency) {
+    case "PLN": return CURRENCY_SYMBOLS.PLN + n;
+    case "EUR": return CURRENCY_SYMBOLS.EUR + n;
+    case "USD": return CURRENCY_SYMBOLS.USD + n;
+    default:    return CURRENCY_SYMBOLS.GBP + n;
+  }
+}
+
 function uid()          { return Math.random().toString(36).slice(2, 9); }
 function monthKey(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
+function expenseCurrency(e: Expense): ExpenseCurrency {
+  return e.currency ?? "GBP";
+}
+
+function toGBP(amount: number, currency: string, rates: Record<string, number> = EXCHANGE_RATES): number {
+  return amount * (rates[currency] ?? 1);
+}
+
+function fmtCurrency(amount: number, currency: string): string {
+  const n = amount.toFixed(2).replace(/\.00$/, "");
+  switch (currency) {
+    case "PLN": return "zł" + n;
+    case "EUR": return "€" + n;
+    case "USD": return "$" + n;
+    default:    return "£" + n;
+  }
+}
+
+const LS_EXCHANGE_RATES = "budgetExchangeRates";
+const CURRENCY_OPTIONS: { value: ExpenseCurrency; label: string }[] = [
+  { value: "GBP", label: "GBP £" },
+  { value: "PLN", label: "PLN zł" },
+  { value: "EUR", label: "EUR €" },
+  { value: "USD", label: "USD $" },
+];
+
+const EMPTY_FORM = {
+  name: "",
+  amount: "",
+  cat: "Fixed" as Category,
+  currency: "GBP" as ExpenseCurrency,
+};
+
+function isExpenseCurrency(v: string): v is ExpenseCurrency {
+  return v === "GBP" || v === "PLN" || v === "EUR" || v === "USD";
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -110,12 +175,24 @@ export default function BudgetTracker() {
   const [modal, setModal] = useState<{ open: boolean; mode: "add"|"edit"; expense: Expense|null }>({
     open: false, mode: "add", expense: null,
   });
-  const [form,      setForm]      = useState({ name: "", amount: "", cat: "Fixed" as Category });
+  const [form,      setForm]      = useState({ ...EMPTY_FORM });
   const [formError, setFormError] = useState("");
+
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>(() => ({ ...EXCHANGE_RATES }));
+  const [displayCurrency, setDisplayCurrency] = useState<ExpenseCurrency>("GBP");
+  const [ratesPanelOpen, setRatesPanelOpen] = useState(false);
+  const [rateDraft, setRateDraft] = useState({
+    GBP: "1", PLN: String(EXCHANGE_RATES.PLN), EUR: String(EXCHANGE_RATES.EUR), USD: String(EXCHANGE_RATES.USD),
+  });
 
   const donutRef      = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<Chart | null>(null);
   const copyMsgTimerRef = useRef<number | null>(null);
+
+  function convertAmount(amount: number, fromCurrency: string, toCurrency: string): number {
+    const inGBP = amount * (exchangeRates[fromCurrency] ?? 1);
+    return inGBP / (exchangeRates[toCurrency] ?? 1);
+  }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -196,6 +273,30 @@ export default function BudgetTracker() {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(LS_EXCHANGE_RATES) : null;
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof parsed !== "object" || parsed === null) return;
+      const merged: Record<string, number> = { ...EXCHANGE_RATES };
+      (["GBP", "PLN", "EUR", "USD"] as ExpenseCurrency[]).forEach(k => {
+        const v = parsed[k];
+        if (typeof v === "number" && !Number.isNaN(v)) merged[k] = v;
+      });
+      merged.GBP = 1;
+      setExchangeRates(merged);
+      setRateDraft({
+        GBP: "1",
+        PLN: String(merged.PLN),
+        EUR: String(merged.EUR),
+        USD: String(merged.USD),
+      });
+    } catch {
+      /* ignore invalid stored rates */
+    }
+  }, []);
+
   // ── Save month to Supabase (upsert) ───────────────────────────────────────
 
   const saveMonth = useCallback(async (key: string, data: MonthData) => {
@@ -248,7 +349,11 @@ export default function BudgetTracker() {
     if (chartInstance.current) chartInstance.current.destroy();
 
     const groups: Partial<Record<Category, number>> = {};
-    expenses.forEach(e => { groups[e.cat] = (groups[e.cat] ?? 0) + e.amount; });
+    expenses.forEach(e => {
+      const c = expenseCurrency(e);
+      const v = convertAmount(e.amount, c, displayCurrency);
+      groups[e.cat] = (groups[e.cat] ?? 0) + v;
+    });
     const labels   = Object.keys(groups) as Category[];
     const data     = labels.map(l => groups[l]!);
     const bgColors = labels.map(l => CAT_COLORS[l]);
@@ -260,12 +365,12 @@ export default function BudgetTracker() {
         responsive: false, cutout: "72%",
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: i => " " + fmt(i.parsed as number) } },
+          tooltip: { callbacks: { label: i => " " + fmtDisplay(i.parsed as number, displayCurrency) } },
         },
       },
     });
     return () => { chartInstance.current?.destroy(); };
-  }, [expenses]);
+  }, [expenses, exchangeRates, displayCurrency]);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -284,12 +389,12 @@ export default function BudgetTracker() {
   function resetPaid() { updateMonth({ paidIds: [] }); }
 
   function openAdd() {
-    setForm({ name: "", amount: "", cat: "Fixed" });
+    setForm({ ...EMPTY_FORM });
     setFormError("");
     setModal({ open: true, mode: "add", expense: null });
   }
   function openEdit(e: Expense) {
-    setForm({ name: e.name, amount: String(e.amount), cat: e.cat });
+    setForm({ name: e.name, amount: String(e.amount), cat: e.cat, currency: e.currency ?? "GBP" });
     setFormError("");
     setModal({ open: true, mode: "edit", expense: e });
   }
@@ -302,11 +407,13 @@ export default function BudgetTracker() {
     if (isNaN(amount) || amount <= 0) { setFormError("Enter a valid amount greater than 0."); return; }
 
     if (modal.mode === "add") {
-      updateMonth({ expenses: [...expenses, { id: uid(), name, amount, cat: form.cat }] });
+      updateMonth({
+        expenses: [...expenses, { id: uid(), name, amount, cat: form.cat, currency: form.currency }],
+      });
     } else if (modal.expense) {
       updateMonth({
         expenses: expenses.map(e =>
-          e.id === modal.expense!.id ? { ...e, name, amount, cat: form.cat } : e
+          e.id === modal.expense!.id ? { ...e, name, amount, cat: form.cat, currency: form.currency } : e
         ),
       });
     }
@@ -323,6 +430,16 @@ export default function BudgetTracker() {
   function deleteAllExpenses() {
     updateMonth({ expenses: [], paidIds: [] });
     setConfirmDelete(false);
+  }
+
+  function saveExchangeRates() {
+    const PLN = parseFloat(rateDraft.PLN);
+    const EUR = parseFloat(rateDraft.EUR);
+    const USD = parseFloat(rateDraft.USD);
+    if ([PLN, EUR, USD].some(n => Number.isNaN(n) || n < 0)) return;
+    const next = { GBP: 1, PLN, EUR, USD };
+    setExchangeRates(next);
+    localStorage.setItem(LS_EXCHANGE_RATES, JSON.stringify(next));
   }
 
   function copyFromPreviousMonth(forceOverwrite = false) {
@@ -367,15 +484,18 @@ export default function BudgetTracker() {
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const totalBudgeted = expenses.reduce((s, e) => s + e.amount, 0);
-  const paidTotal     = expenses.filter(e => paidIds.has(e.id)).reduce((s, e) => s + e.amount, 0);
+  const totalBudgeted = expenses.reduce((s, e) => s + toGBP(e.amount, expenseCurrency(e), exchangeRates), 0);
+  const paidTotal     = expenses.filter(e => paidIds.has(e.id)).reduce((s, e) => s + toGBP(e.amount, expenseCurrency(e), exchangeRates), 0);
   const remaining     = income - paidTotal;
   const unallocated   = income - totalBudgeted;
-  const pct           = Math.min(Math.round((paidTotal / income) * 100), 100);
+  const pct           = income > 0 ? Math.min(Math.round((paidTotal / income) * 100), 100) : 0;
   const progressColor = pct > 85 ? "#D85A30" : pct > 60 ? "#BA7517" : "#1D9E75";
 
   const catGroups: Partial<Record<Category, number>> = {};
-  expenses.forEach(e => { catGroups[e.cat] = (catGroups[e.cat] ?? 0) + e.amount; });
+  expenses.forEach(e => {
+    const gbp = toGBP(e.amount, expenseCurrency(e), exchangeRates);
+    catGroups[e.cat] = (catGroups[e.cat] ?? 0) + gbp;
+  });
 
   const visible = activeCat === "All" ? expenses : expenses.filter(e => e.cat === activeCat);
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
@@ -384,8 +504,9 @@ export default function BudgetTracker() {
     const k  = monthKey(year, i);
     const md = allData[k];
     if (!md) return { name: name.slice(0, 3), pct: 0, hasData: false };
-    const total = md.expenses.reduce((s, e) => s + e.amount, 0);
-    const paid  = md.expenses.filter(e => md.paidIds.includes(e.id)).reduce((s, e) => s + e.amount, 0);
+    const total = md.expenses.reduce((s, e) => s + toGBP(e.amount, expenseCurrency(e), exchangeRates), 0);
+    const paid  = md.expenses.filter(e => md.paidIds.includes(e.id))
+      .reduce((s, e) => s + toGBP(e.amount, expenseCurrency(e), exchangeRates), 0);
     return { name: name.slice(0, 3), pct: total > 0 ? Math.round((paid / total) * 100) : 0, hasData: true };
   });
 
@@ -417,10 +538,24 @@ export default function BudgetTracker() {
                 onKeyDown={e => e.key === "Enter" && submitForm()} />
             </div>
             <div style={s.fieldGroup}>
-              <label style={s.label}>Amount (£)</label>
+              <label style={s.label}>Amount</label>
               <input style={s.input} type="number" min="0" step="0.01" value={form.amount} placeholder="0.00"
                 onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                 onKeyDown={e => e.key === "Enter" && submitForm()} />
+            </div>
+            <div style={s.fieldGroup}>
+              <label style={s.label}>Currency</label>
+              <select
+                style={s.select}
+                value={isExpenseCurrency(form.currency) ? form.currency : "GBP"}
+                onChange={e =>
+                  setForm(f => ({ ...f, currency: e.target.value as ExpenseCurrency }))
+                }
+              >
+                {CURRENCY_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
             </div>
             <div style={s.fieldGroup}>
               <label style={s.label}>Category</label>
@@ -464,6 +599,19 @@ export default function BudgetTracker() {
             <button style={s.navBtn} onClick={prevMonth}>‹</button>
             <span style={s.navLabel}>{MONTH_NAMES[month]} {year}</span>
             <button style={s.navBtn} onClick={nextMonth}>›</button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" as const }}>
+            {(["GBP", "PLN", "EUR", "USD"] as ExpenseCurrency[]).map(code => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setDisplayCurrency(code)}
+                style={{ ...s.tab, ...s.displayCurrTab, ...(displayCurrency === code ? s.tabActive : {}) }}
+                title={`View in ${code}`}
+              >
+                {CURRENCY_SYMBOLS[code]}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -511,15 +659,15 @@ export default function BudgetTracker() {
               </span>
             ) : (
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span>{fmt(income)}</span>
+                <span>{fmtDisplay(convertAmount(income, "GBP", displayCurrency), displayCurrency)}</span>
                 <button onClick={startEditIncome} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, borderWidth: 0, background: "#9FE1CB", color: "#0F6E56", cursor: "pointer", fontFamily: "monospace" }}>edit</button>
               </span>
             )}
           </div>
           <div style={s.bannerSub}>
             {unallocated >= 0
-              ? `£${unallocated.toFixed(2)} unallocated · mark expenses paid to track`
-              : `⚠ Over budget by £${Math.abs(unallocated).toFixed(2)}`}
+              ? `${fmtDisplay(convertAmount(unallocated, "GBP", displayCurrency), displayCurrency)} unallocated · mark expenses paid to track`
+              : `⚠ Over budget by ${fmtDisplay(convertAmount(Math.abs(unallocated), "GBP", displayCurrency), displayCurrency)}`}
           </div>
         </div>
         <div style={s.bannerActions}>
@@ -542,16 +690,60 @@ export default function BudgetTracker() {
       {/* ── Summary grid ── */}
       <div style={s.summaryGrid}>
         {[
-          { label: "Income",    val: fmt(income),        color: "#1a1a1a" },
-          { label: "Budgeted",  val: fmt(totalBudgeted), color: totalBudgeted > income ? "#D85A30" : "#1a1a1a" },
-          { label: "Paid out",  val: fmt(paidTotal),     color: "#D85A30" },
-          { label: "Remaining", val: fmt(remaining),     color: remaining < 0 ? "#D85A30" : "#0F6E56" },
+          { label: "Income",    val: fmtDisplay(convertAmount(income, "GBP", displayCurrency), displayCurrency),        color: "#1a1a1a" },
+          { label: "Budgeted",  val: fmtDisplay(convertAmount(totalBudgeted, "GBP", displayCurrency), displayCurrency), color: totalBudgeted > income ? "#D85A30" : "#1a1a1a" },
+          { label: "Paid out",  val: fmtDisplay(convertAmount(paidTotal, "GBP", displayCurrency), displayCurrency),     color: "#D85A30" },
+          { label: "Remaining", val: fmtDisplay(convertAmount(remaining, "GBP", displayCurrency), displayCurrency),     color: remaining < 0 ? "#D85A30" : "#0F6E56" },
         ].map(m => (
           <div key={m.label} style={s.metric}>
             <div style={s.metricLabel}>{m.label}</div>
             <div style={{ ...s.metricVal, color: m.color }}>{m.val}</div>
           </div>
         ))}
+      </div>
+
+      <div style={s.ratesSettingsRow}>
+        <button
+          type="button"
+          style={s.ratesLink}
+          onClick={() =>
+            setRatesPanelOpen(prev => {
+              if (!prev) {
+                setRateDraft({
+                  GBP: "1",
+                  PLN: String(exchangeRates.PLN),
+                  EUR: String(exchangeRates.EUR),
+                  USD: String(exchangeRates.USD),
+                });
+              }
+              return !prev;
+            })
+          }
+        >
+          {ratesPanelOpen ? "hide exchange rates" : "exchange rates"}
+        </button>
+        {ratesPanelOpen && (
+          <div style={s.ratesPanel}>
+            <div style={s.ratesPanelTitle}>Rates → GBP (manual)</div>
+            <div style={s.ratesGrid}>
+              {(["GBP", "PLN", "EUR", "USD"] as ExpenseCurrency[]).map(code => (
+                <label key={code} style={s.rateField}>
+                  <span style={s.rateLabel}>{code}</span>
+                  <input
+                    style={s.rateInput}
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    disabled={code === "GBP"}
+                    value={code === "GBP" ? "1" : rateDraft[code]}
+                    onChange={e => code !== "GBP" && setRateDraft(d => ({ ...d, [code]: e.target.value }))}
+                  />
+                </label>
+              ))}
+            </div>
+            <button type="button" style={s.ratesSaveBtn} onClick={saveExchangeRates}>Save rates</button>
+          </div>
+        )}
       </div>
 
       {/* ── Progress bar ── */}
@@ -601,9 +793,14 @@ export default function BudgetTracker() {
               <div style={{ ...s.expenseIcon, background: CAT_BG[e.cat] }}>{CAT_ICONS[e.cat]}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ ...s.expenseName, ...(paid ? s.expenseNamePaid : {}) }}>{e.name}</div>
-                <div style={s.expenseCat}>{e.cat}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
+                  <div style={s.expenseCat}>{e.cat}</div>
+                  <span style={s.expenseCurrBadge}>{expenseCurrency(e)}</span>
+                </div>
               </div>
-              <div style={{ ...s.expenseAmount, color: paid ? "#bbb" : CAT_COLORS[e.cat] }}>{fmt(e.amount)}</div>
+              <div style={{ ...s.expenseAmount, color: paid ? "#bbb" : CAT_COLORS[e.cat], marginLeft: "auto", textAlign: "right" as const }}>
+                {fmtDisplay(convertAmount(e.amount, expenseCurrency(e), displayCurrency), displayCurrency)}
+              </div>
               {isConfirm ? (
                 <div style={{ display: "flex", gap: 4, marginLeft: 6 }}>
                   <button style={s.btnDelete} onClick={() => deleteExpense(e.id)}>Delete</button>
@@ -629,7 +826,7 @@ export default function BudgetTracker() {
         <div style={{ position: "relative", width: 140, height: 140, flexShrink: 0 }}>
           <canvas ref={donutRef} width={140} height={140} />
           <div style={s.donutCenter}>
-            <div style={s.donutCenterVal}>{fmt(totalBudgeted)}</div>
+            <div style={s.donutCenterVal}>{fmtDisplay(convertAmount(totalBudgeted, "GBP", displayCurrency), displayCurrency)}</div>
             <div style={s.donutCenterLabel}>budgeted</div>
           </div>
         </div>
@@ -638,7 +835,7 @@ export default function BudgetTracker() {
             <div key={cat} style={s.legendItem}>
               <span style={{ ...s.legendDot, background: CAT_COLORS[cat] }} />
               <span style={s.legendName}>{cat}</span>
-              <span style={s.legendAmount}>{fmt(catGroups[cat]!)}</span>
+              <span style={s.legendAmount}>{fmtDisplay(convertAmount(catGroups[cat]!, "GBP", displayCurrency), displayCurrency)}</span>
               <span style={s.legendPct}>{Math.round((catGroups[cat]! / income) * 100)}%</span>
             </div>
           ))}
@@ -718,12 +915,22 @@ const s: Record<string, React.CSSProperties> = {
   metric:     { background: "#f7f6f3", borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
   metricLabel:{ fontSize: 10, color: "#999", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 },
   metricVal:  { fontSize: 16, fontWeight: 700, fontFamily: "monospace", letterSpacing: -0.5, wordBreak: "break-all" },
+  ratesSettingsRow: { marginTop: "-0.5rem", marginBottom: "1rem" },
+  ratesLink:  { fontSize: 11, color: "#378ADD", background: "none", borderWidth: 0, cursor: "pointer", fontFamily: "monospace", textDecoration: "underline", padding: 0 },
+  ratesPanel: { marginTop: 10, padding: "12px 14px", background: "#f7f6f3", borderRadius: 10, borderWidth: 1, borderStyle: "solid", borderColor: "#e5e4e0" },
+  ratesPanelTitle: { fontSize: 11, color: "#999", fontFamily: "monospace", marginBottom: 10, textTransform: "uppercase" as const, letterSpacing: 0.5 },
+  ratesGrid:      { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 },
+  rateField:      { display: "flex", flexDirection: "column", gap: 4 },
+  rateLabel:      { fontSize: 11, color: "#666", fontFamily: "monospace" },
+  rateInput:      { width: "100%", padding: "6px 8px", borderRadius: 8, borderWidth: 1, borderStyle: "solid", borderColor: "#e5e4e0", fontSize: 13, fontFamily: "monospace", outline: "none", boxSizing: "border-box" as const, background: "#fff" },
+  ratesSaveBtn:   { fontSize: 12, padding: "6px 12px", borderRadius: 8, borderWidth: 0, background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "monospace", fontWeight: 600 },
   progressWrap: { marginBottom: "1.5rem" },
   progressLabel:{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#999", marginBottom: 6, fontFamily: "monospace" },
   progressBg:   { height: 8, background: "#efefeb", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4, transition: "width 0.4s ease" },
   tab:        { fontSize: 12, padding: "5px 12px", borderRadius: 20, borderWidth: 1, borderStyle: "solid", borderColor: "#e5e4e0", background: "#fff", cursor: "pointer", fontFamily: "monospace", color: "#555" },
   tabActive:  { background: "#1a1a1a", color: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: "#1a1a1a" },
+  displayCurrTab: { fontSize: 11, padding: "3px 8px" },
   addBtn:     { fontSize: 12, padding: "5px 14px", borderRadius: 20, borderWidth: 0, background: "#1D9E75", color: "#fff", cursor: "pointer", fontFamily: "monospace", fontWeight: 600, flexShrink: 0 },
   expenseList:    { display: "flex", flexDirection: "column", gap: 6 },
   expenseRow:     { display: "flex", alignItems: "center", gap: 10, background: "#fff", borderWidth: 1, borderStyle: "solid", borderColor: "#e5e4e0", borderRadius: 10, padding: "10px 14px" },
@@ -731,6 +938,7 @@ const s: Record<string, React.CSSProperties> = {
   expenseName:    { fontSize: 14, fontWeight: 600 },
   expenseNamePaid:{ textDecoration: "line-through", color: "#bbb" },
   expenseCat:     { fontSize: 11, color: "#999", fontFamily: "monospace" },
+  expenseCurrBadge: { fontSize: 11, color: "#999", fontFamily: "monospace", background: "#f7f6f3", padding: "2px 8px", borderRadius: 20 },
   expenseAmount:  { fontSize: 15, fontWeight: 700, fontFamily: "monospace", marginLeft: "auto" },
   statusBtn:      { fontSize: 11, padding: "3px 8px", borderRadius: 6, borderWidth: 0, cursor: "pointer", fontFamily: "monospace" },
   btnPaid:        { background: "#E1F5EE", color: "#0F6E56" },
