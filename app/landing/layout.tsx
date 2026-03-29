@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Budget Tracker — Take Control of Your Money",
   description: "Free budget tracker app. Track expenses, manage debt, and plan your monthly finances. Used by real people to get out of debt.",
+  alternates: {
+    canonical: "https://debtremover.co.uk/landing",
+  },
   keywords: "budget tracker, expense tracker, debt management, monthly budget, personal finance, UK, debt remover",
   openGraph: {
     title: "Budget Tracker — Take Control of Your Money",
