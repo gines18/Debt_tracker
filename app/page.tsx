@@ -23,6 +23,13 @@ type MonthData = {
   paidIds:  string[];
 };
 
+type DebtHelpOrg = {
+  name: string;
+  website: string;
+  phone: string;
+  description: string;
+};
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULT_income = 1540;
@@ -61,6 +68,14 @@ const CAT_ICONS: Record<Category, string> = {
   Fixed: "🏠", Essentials: "🛒", Debt: "💳", Savings: "🏦", Personal: "✨",
 };
 
+const DEBT_HELP_ORGS: DebtHelpOrg[] = [
+  { name: "StepChange Debt Charity", website: "https://www.stepchange.org", phone: "0800 138 1111", description: "Free debt advice" },
+  { name: "National Debtline", website: "https://www.nationaldebtline.org", phone: "0808 808 4000", description: "Free advice for people in England, Wales & Scotland" },
+  { name: "Citizens Advice", website: "https://www.citizensadvice.org.uk", phone: "0800 144 8848", description: "Free, confidential advice" },
+  { name: "PayPlan", website: "https://www.payplan.com", phone: "0800 280 2816", description: "Free debt management plans" },
+  { name: "MoneyHelper", website: "https://www.moneyhelper.org.uk", phone: "0800 138 7777", description: "Government-backed money guidance" },
+];
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmt(n: number) { return "£" + n.toFixed(2).replace(/\.00$/, ""); }
@@ -88,6 +103,7 @@ export default function BudgetTracker() {
 
   const [activeCat,     setActiveCat]     = useState<Category | "All">("All");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isDebtHelpOpen, setIsDebtHelpOpen] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; mode: "add"|"edit"; expense: Expense|null }>({
     open: false, mode: "add", expense: null,
   });
@@ -557,6 +573,40 @@ export default function BudgetTracker() {
         </div>
       </div>
 
+      {/* ── Debt help ── */}
+      <div style={s.debtHelpWrap}>
+        <button
+          style={s.debtHelpToggle}
+          onClick={() => setIsDebtHelpOpen(v => !v)}
+          aria-expanded={isDebtHelpOpen}
+          aria-controls="debt-help-panel"
+        >
+          <span style={s.debtHelpTitle}>Need help with debt?</span>
+          <span style={s.debtHelpIcon}>{isDebtHelpOpen ? "−" : "+"}</span>
+        </button>
+        {isDebtHelpOpen && (
+          <div id="debt-help-panel" style={s.debtHelpPanel}>
+            <div style={s.debtHelpList}>
+              {DEBT_HELP_ORGS.map(org => (
+                <div key={org.name} style={s.debtHelpItem}>
+                  <div style={s.debtHelpLine}>
+                    <strong>{org.name}</strong>
+                    <span style={s.debtHelpSep}>—</span>
+                    <a href={org.website} target="_blank" rel="noreferrer" style={s.debtHelpLink}>
+                      {org.website.replace(/^https?:\/\//, "")}
+                    </a>
+                    <span style={s.debtHelpSep}>—</span>
+                    <span>{org.phone}</span>
+                  </div>
+                  <div style={s.debtHelpDesc}>{org.description}</div>
+                </div>
+              ))}
+            </div>
+            <div style={s.debtHelpNote}>All services are free and confidential</div>
+          </div>
+        )}
+      </div>
+
     </main>
   );
 }
@@ -622,6 +672,18 @@ const s: Record<string, React.CSSProperties> = {
   legendName:   { flex: 1, color: "#555" },
   legendAmount: { fontFamily: "monospace", fontWeight: 500 },
   legendPct:    { fontFamily: "monospace", color: "#999", fontSize: 11, minWidth: 32, textAlign: "right" as const },
+  debtHelpWrap:   { marginTop: "1.25rem", background: "#FAEEDA", borderWidth: 1, borderStyle: "solid", borderColor: "#FAC775", borderRadius: 10, overflow: "hidden" },
+  debtHelpToggle: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "transparent", borderWidth: 0, padding: "12px 14px", cursor: "pointer", textAlign: "left" as const },
+  debtHelpTitle:  { fontSize: 14, fontWeight: 700, color: "#7A4B11" },
+  debtHelpIcon:   { fontSize: 18, fontWeight: 700, color: "#BA7517", lineHeight: 1, minWidth: 14, textAlign: "center" as const },
+  debtHelpPanel:  { padding: "0 14px 12px" },
+  debtHelpList:   { display: "flex", flexDirection: "column", gap: 10 },
+  debtHelpItem:   { background: "rgba(255,255,255,0.55)", borderRadius: 8, padding: "9px 10px" },
+  debtHelpLine:   { fontSize: 13, color: "#4A3A20", display: "flex", flexWrap: "wrap" as const, gap: 6, alignItems: "baseline" },
+  debtHelpSep:    { color: "#BA7517" },
+  debtHelpLink:   { color: "#B05E00", textDecoration: "underline", wordBreak: "break-all" as const },
+  debtHelpDesc:   { marginTop: 4, fontSize: 12, color: "#7A5A2B", fontFamily: "monospace" },
+  debtHelpNote:   { marginTop: 10, fontSize: 11, color: "#9B6A28", fontFamily: "monospace" },
   overlay:      { position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 },
   modal:        { background: "#fff", borderRadius: 14, padding: "1.5rem", width: "100%", maxWidth: 400, margin: "0 1rem" },
   modalHeader:  { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" },
