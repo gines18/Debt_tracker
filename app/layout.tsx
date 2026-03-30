@@ -25,6 +25,29 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/site.webmanifest",
+  openGraph: {
+    title: "Budget Tracker — Take Control of Your Money",
+    description: "Free budget tracker app. Track expenses, manage debt, and plan your monthly finances. Used by real people to get out of debt.",
+    url: "https://debtremover.co.uk",
+    siteName: "Debt Remover",
+    images: [
+      {
+        url: "https://debtremover.co.uk/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Debt Remover Budget Tracker",
+      },
+    ],
+    locale: "en_GB",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Budget Tracker — Take Control of Your Money",
+    description: "Free budget tracker app. Track expenses, manage debt, and plan your monthly finances.",
+    images: ["https://debtremover.co.uk/og-image.jpg"],
+    creator: "@gines18",
+  },
 };
 
 export default function RootLayout({
