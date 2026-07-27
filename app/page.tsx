@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Chart, ArcElement, DoughnutController, Tooltip, Legend } from "chart.js";
 import { createClient } from "@/lib/supabase";
@@ -642,7 +643,22 @@ export default function BudgetTracker() {
       {/* ── Header ── */}
       <div style={s.topbar}>
         <div style={s.logo}>budget<span style={{ color: "#1D9E75" }}>.</span>tracker</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+          <Link
+            href="/plan"
+            style={{
+              fontFamily: "monospace",
+              fontSize: 12,
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: `1px solid ${theme.border}`,
+              color: theme.text,
+              textDecoration: "none",
+              background: theme.surface,
+            }}
+          >
+            Debt plan
+          </Link>
           <button type="button" style={s.themeBtn} onClick={toggleTheme} title={darkMode ? "Light mode" : "Dark mode"} aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
             {darkMode ? "☀" : "🌙"}
           </button>
