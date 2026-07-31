@@ -35,6 +35,11 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
   const [pending, startTransition] = useTransition();
   const supabase = createClient();
 
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  }
+
   const refresh = useCallback(async (budgetId?: string) => {
     const id = budgetId ?? snapshot.budget.id;
     setLoading(true);
@@ -152,6 +157,13 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
             <span className="rounded-md bg-emerald-50 px-3 py-1.5 font-medium text-emerald-800">
               Debt plan
             </span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="rounded-md px-3 py-1.5 text-stone-500 hover:bg-stone-100 hover:text-red-600"
+            >
+              Sign out
+            </button>
           </nav>
         </div>
       </header>

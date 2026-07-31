@@ -112,14 +112,14 @@ export async function createBudget(input?: {
       budget_id: budgetId,
       debt_id: d.id,
       month,
-      amount_pence: i === 0 ? 500000 : 300000, // £5,000 / £3,000 example
+      amount_pence: 0,
       is_savings: false,
     })),
     {
       budget_id: budgetId,
       debt_id: null,
       month,
-      amount_pence: 100000,
+      amount_pence: 0,
       is_savings: true,
     },
   ];
