@@ -13,6 +13,7 @@ import {
 } from "@/app/actions/debt-budget";
 import { AddDebtDialog } from "@/components/budget-tracker/add-debt-dialog";
 import { BudgetTable } from "@/components/budget-tracker/budget-table";
+import { PrivacyPopup } from "@/components/budget-tracker/privacy-popup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -156,6 +157,7 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+        <PrivacyPopup />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">
             <Label htmlFor="budget-title" className="text-stone-500">

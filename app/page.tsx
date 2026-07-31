@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Chart, ArcElement, DoughnutController, Tooltip, Legend } from "chart.js";
 import { createClient } from "@/lib/supabase";
+import { PrivacyPopup } from "@/components/budget-tracker/privacy-popup";
 import type { User } from "@supabase/supabase-js";
 
 Chart.register(ArcElement, DoughnutController, Tooltip, Legend);
@@ -209,6 +210,7 @@ export default function BudgetTracker() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [isDebtHelpOpen, setIsDebtHelpOpen] = useState(false);
+  const [isTipsOpen, setIsTipsOpen] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
   const [copyConfirmOpen, setCopyConfirmOpen] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; mode: "add"|"edit"; expense: Expense|null }>({
@@ -585,6 +587,7 @@ export default function BudgetTracker() {
   return (
     <div style={s.pageRoot}>
     <main style={s.shell}>
+      <PrivacyPopup />
 
       {/* ── Modal ── */}
       {modal.open && (
@@ -925,6 +928,43 @@ export default function BudgetTracker() {
         </div>
       </div>
 
+      {/* ── Tips ── */}
+      <div style={s.tipsWrap}>
+        <button
+          style={s.tipsToggle}
+          onClick={() => setIsTipsOpen(v => !v)}
+          aria-expanded={isTipsOpen}
+          aria-controls="tips-panel"
+        >
+          <span style={s.tipsTitle}>Savings & debt tips</span>
+          <span style={s.tipsIcon}>{isTipsOpen ? "−" : "+"}</span>
+        </button>
+        {isTipsOpen && (
+          <div id="tips-panel" style={s.tipsPanel}>
+            <div style={s.tipsSection}>
+              <div style={s.tipsSectionTitle}>💡 Save money</div>
+              <ul style={s.tipsList}>
+                <li>Track every expense — awareness is the first step to saving</li>
+                <li>Set a monthly savings goal and treat it like a bill</li>
+                <li>Cut recurring subscriptions you rarely use</li>
+                <li>Cook at home more often — small changes add up</li>
+                <li>Use a 24-hour rule before making non-essential purchases</li>
+              </ul>
+            </div>
+            <div style={s.tipsSection}>
+              <div style={s.tipsSectionTitle}>📉 Pay off debt faster</div>
+              <ul style={s.tipsList}>
+                <li>Focus on the highest-interest debt first (avalanche method)</li>
+                <li>Try the snowball method — pay off smallest debts first for momentum</li>
+                <li>Pay more than the minimum whenever possible</li>
+                <li>Avoid taking on new debt while paying off existing balances</li>
+                <li>Celebrate small wins to stay motivated</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Debt help ── */}
       <div style={s.debtHelpWrap}>
         <button
@@ -1054,7 +1094,15 @@ function buildStyles(theme: BudgetTheme, darkMode: boolean): Record<string, Reac
   legendName:   { flex: 1, color: theme.textMuted },
   legendAmount: { fontFamily: "monospace", fontWeight: 500, color: theme.text },
   legendPct:    { fontFamily: "monospace", color: theme.textMuted, fontSize: 11, minWidth: 32, textAlign: "right" as const },
-  debtHelpWrap:   { marginTop: "1.25rem", background: "#FAEEDA", borderWidth: 1, borderStyle: "solid", borderColor: "#FAC775", borderRadius: 10, overflow: "hidden" },
+  tipsWrap:      { marginTop: "1.25rem", background: "#E6F1FB", borderWidth: 1, borderStyle: "solid", borderColor: "#A5C8E8", borderRadius: 10, overflow: "hidden" },
+  tipsToggle:    { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "transparent", borderWidth: 0, padding: "12px 14px", cursor: "pointer", textAlign: "left" as const },
+  tipsTitle:     { fontSize: 14, fontWeight: 700, color: "#1a4a6b" },
+  tipsIcon:      { fontSize: 18, fontWeight: 700, color: "#378ADD", lineHeight: 1, minWidth: 14, textAlign: "center" as const },
+  tipsPanel:     { padding: "0 14px 12px" },
+  tipsSection:   { marginBottom: 12 },
+  tipsSectionTitle: { fontSize: 13, fontWeight: 600, color: "#1a4a6b", marginBottom: 6, fontFamily: "monospace" },
+  tipsList:      { listStyle: "disc", paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 },
+  debtHelpWrap:  { marginTop: "1.25rem", background: "#FAEEDA", borderWidth: 1, borderStyle: "solid", borderColor: "#FAC775", borderRadius: 10, overflow: "hidden" },
   debtHelpToggle: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: "transparent", borderWidth: 0, padding: "12px 14px", cursor: "pointer", textAlign: "left" as const },
   debtHelpTitle:  { fontSize: 14, fontWeight: 700, color: "#7A4B11" },
   debtHelpIcon:   { fontSize: 18, fontWeight: 700, color: "#BA7517", lineHeight: 1, minWidth: 14, textAlign: "center" as const },
