@@ -60,10 +60,10 @@ export function AmountCell({
 
   const textClass =
     variant === "total"
-      ? "text-red-600 font-semibold"
+      ? "text-red-600 font-semibold dark:text-red-400"
       : variant === "savings"
-        ? "text-emerald-700 font-semibold"
-        : "text-stone-800";
+        ? "text-emerald-700 font-semibold dark:text-emerald-400"
+        : "text-stone-800 dark:text-stone-200";
 
   if (disabled) {
     return (
@@ -77,7 +77,7 @@ export function AmountCell({
     return (
       <input
         ref={inputRef}
-        className="h-8 w-full min-w-[5.5rem] rounded border border-emerald-400 px-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+        className="h-8 w-full min-w-[5.5rem] rounded border border-emerald-400 bg-white px-2 text-sm tabular-nums text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-emerald-600 dark:bg-[#242424] dark:text-stone-100"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => void commit()}
@@ -95,7 +95,7 @@ export function AmountCell({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "group relative w-full min-w-[5.5rem] rounded px-2 py-1.5 text-left text-sm tabular-nums transition-colors hover:bg-emerald-50/80",
+        "group relative w-full min-w-[5.5rem] rounded px-2 py-1.5 text-left text-sm tabular-nums transition-colors hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40",
         textClass,
         saving && "opacity-60",
       )}
@@ -103,7 +103,7 @@ export function AmountCell({
     >
       {progress !== null && (
         <span
-          className="pointer-events-none absolute inset-y-1 left-1 rounded bg-emerald-100/90 transition-all"
+          className="pointer-events-none absolute inset-y-1 left-1 rounded bg-emerald-100/90 transition-all dark:bg-emerald-900/50"
           style={{ width: `calc(${progress}% - 4px)`, maxWidth: "calc(100% - 8px)" }}
           aria-hidden
         />

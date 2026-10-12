@@ -82,8 +82,8 @@ export function BudgetTable({ snapshot, onRefresh }: Props) {
             <span
               className={cn(
                 "pl-2 font-medium",
-                r.kind === "total" && "text-red-600",
-                r.kind === "savings" && "text-emerald-700",
+                r.kind === "total" && "text-red-600 dark:text-red-400",
+                r.kind === "savings" && "text-emerald-700 dark:text-emerald-400",
               )}
             >
               {r.label}
@@ -101,7 +101,7 @@ export function BudgetTable({ snapshot, onRefresh }: Props) {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-stone-400 hover:text-red-600"
+              className="h-8 w-8 text-stone-400 hover:text-red-600 dark:text-stone-500 dark:hover:text-red-400"
               onClick={() => void handleDeleteDebt(r.debtId!)}
               aria-label={`Delete ${r.label}`}
             >
@@ -149,13 +149,20 @@ export function BudgetTable({ snapshot, onRefresh }: Props) {
   });
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
+    <div className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-[#1a1a1a] dark:shadow-none">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id}>
               {hg.headers.map((header) => (
-                <TableHead key={header.id} className={header.id === "label" ? "sticky left-0 z-10 bg-stone-50/95 min-w-[10rem]" : undefined}>
+                <TableHead
+                  key={header.id}
+                  className={
+                    header.id === "label"
+                      ? "sticky left-0 z-10 min-w-[10rem] bg-stone-50/95 dark:bg-stone-900/95"
+                      : undefined
+                  }
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -169,14 +176,18 @@ export function BudgetTable({ snapshot, onRefresh }: Props) {
             <TableRow
               key={row.id}
               className={cn(
-                row.original.kind === "total" && "bg-red-50/40",
-                row.original.kind === "savings" && "bg-emerald-50/40",
+                row.original.kind === "total" && "bg-red-50/40 dark:bg-red-950/25",
+                row.original.kind === "savings" && "bg-emerald-50/40 dark:bg-emerald-950/25",
               )}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell
                   key={cell.id}
-                  className={cell.column.id === "label" ? "sticky left-0 z-10 bg-white" : undefined}
+                  className={
+                    cell.column.id === "label"
+                      ? "sticky left-0 z-10 bg-white dark:bg-[#1a1a1a]"
+                      : undefined
+                  }
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
@@ -211,7 +222,7 @@ function InlineDebtName({
   return (
     <Input
       defaultValue={name}
-      className="h-8 border-transparent bg-transparent font-medium shadow-none focus-visible:border-stone-200"
+      className="h-8 border-transparent bg-transparent font-medium shadow-none focus-visible:border-stone-200 dark:text-stone-100 dark:focus-visible:border-stone-600"
       onBlur={(e) => void save(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();

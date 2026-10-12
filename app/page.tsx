@@ -5,6 +5,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Chart, ArcElement, DoughnutController, Tooltip, Legend } from "chart.js";
 import { createClient } from "@/lib/supabase";
 import { PrivacyPopup } from "@/components/budget-tracker/privacy-popup";
+import {
+  applyBudgetThemeDark,
+  readBudgetThemeDark,
+  writeBudgetThemeDark,
+} from "@/lib/budget-tracker/theme";
 import type { User } from "@supabase/supabase-js";
 
 Chart.register(ArcElement, DoughnutController, Tooltip, Legend);
@@ -77,8 +82,6 @@ const THEME_DARK: BudgetTheme = {
   surface:    "#1a1a1a",
   surfaceHover:"#222",
 };
-
-const LS_BUDGET_THEME = "budgetTheme";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -243,21 +246,19 @@ export default function BudgetTracker() {
   function toggleTheme() {
     const next = !darkMode;
     setDarkMode(next);
-    localStorage.setItem(LS_BUDGET_THEME, next ? "dark" : "light");
+    writeBudgetThemeDark(next);
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const saved = localStorage.getItem(LS_BUDGET_THEME);
-    if (saved === "dark") setDarkMode(true);
+    const dark = readBudgetThemeDark();
+    setDarkMode(dark);
+    applyBudgetThemeDark(dark);
   }, []);
 
   useEffect(() => {
     document.body.style.backgroundColor = theme.bg;
-    return () => {
-      document.body.style.backgroundColor = "";
-    };
   }, [theme.bg]);
 
   useEffect(() => {

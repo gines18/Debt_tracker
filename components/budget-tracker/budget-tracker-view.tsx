@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { monthKeyFromDate, monthStartFromDate } from "@/lib/budget-tracker/months";
 import type { Budget, BudgetSnapshot } from "@/lib/budget-tracker/types";
 import { createClient } from "@/lib/supabase";
+import { useBudgetTheme } from "@/hooks/use-budget-theme";
 import { cn } from "@/lib/utils";
 import { Loader2, Plus } from "lucide-react";
 
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
+  const { darkMode, toggleTheme } = useBudgetTheme();
   const [budgets, setBudgets] = useState(initialBudgets);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [loading, setLoading] = useState(false);
@@ -144,23 +146,35 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
   const startDateValue = snapshot.budget.start_date.slice(0, 10);
 
   return (
-    <div className=" bg-[#f7f6f3] text-stone-900">
-      <header className="border-b border-stone-200 bg-white">
+    <div className="min-h-screen bg-[#f7f6f3] text-stone-900 dark:bg-[#0f0f0f] dark:text-stone-100">
+      <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-[#1a1a1a]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <Link href="/" className="font-mono text-lg font-bold tracking-tight">
-            budget<span className="text-emerald-600">.</span>tracker
+          <Link href="/" className="font-mono text-lg font-bold tracking-tight dark:text-stone-100">
+            budget<span className="text-emerald-600 dark:text-emerald-400">.</span>tracker
           </Link>
           <nav className="flex flex-wrap items-center gap-2 text-sm">
-            <Link href="/" className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100">
+            <Link
+              href="/"
+              className="rounded-md px-3 py-1.5 text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+            >
               Monthly budget
             </Link>
-            <span className="rounded-md bg-emerald-50 px-3 py-1.5 font-medium text-emerald-800">
+            <span className="rounded-md bg-emerald-50 px-3 py-1.5 font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
               Debt plan
             </span>
             <button
               type="button"
+              onClick={toggleTheme}
+              className="rounded-md px-2 py-1.5 text-base leading-none hover:bg-stone-100 dark:hover:bg-stone-800"
+              title={darkMode ? "Light mode" : "Dark mode"}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {darkMode ? "☀" : "🌙"}
+            </button>
+            <button
+              type="button"
               onClick={handleSignOut}
-              className="rounded-md px-3 py-1.5 text-stone-500 hover:bg-stone-100 hover:text-red-600"
+              className="rounded-md px-3 py-1.5 text-stone-500 hover:bg-stone-100 hover:text-red-600 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-red-400"
             >
               Sign out
             </button>
@@ -172,7 +186,7 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
         <PrivacyPopup />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">
-            <Label htmlFor="budget-title" className="text-stone-500">
+            <Label htmlFor="budget-title" className="text-stone-500 dark:text-stone-400">
               Budget title
             </Label>
             <Input
@@ -184,7 +198,7 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
             />
             <div className="flex flex-wrap items-center gap-3">
               <div>
-                <Label htmlFor="start-date" className="text-xs text-stone-500">
+                <Label htmlFor="start-date" className="text-xs text-stone-500 dark:text-stone-400">
                   Start date (starting column)
                 </Label>
                 <Input
@@ -196,7 +210,7 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
                 />
               </div>
               {(loading || pending) && (
-                <span className="flex items-center gap-1 text-xs text-stone-500">
+                <span className="flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400">
                   <Loader2 className="h-3 w-3 animate-spin" /> Syncing…
                 </span>
               )}
@@ -205,7 +219,7 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
 
           <div className="flex flex-wrap items-center gap-2">
             <select
-              className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm"
+              className="h-9 rounded-md border border-stone-200 bg-white px-3 text-sm dark:border-stone-700 dark:bg-[#242424] dark:text-stone-100"
               value={snapshot.budget.id}
               onChange={(e) => switchBudget(e.target.value)}
             >
@@ -231,10 +245,10 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
           </Button>
         </div>
 
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           Click any amount to edit. Total debt is calculated automatically. Green savings row stays separate.
           Starting column:{" "}
-          <span className="font-medium text-stone-700">
+          <span className="font-medium text-stone-700 dark:text-stone-200">
             {formatMonthLabel(snapshot.budget.start_date)}
           </span>
         </p>

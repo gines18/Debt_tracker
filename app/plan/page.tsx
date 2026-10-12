@@ -12,9 +12,11 @@ export default async function DebtPlanPage() {
   const budgets = await listBudgets();
 
   return (
-    <div className="mx-auto max-w-6xl px-4">
+    <>
       <BudgetTrackerView initialSnapshot={snapshot} initialBudgets={budgets} />
-      <DebtPayoffStory />
-    </div>
+      <div className="mx-auto max-w-6xl px-4 pb-8">
+        <DebtPayoffStory />
+      </div>
+    </>
   );
 }
