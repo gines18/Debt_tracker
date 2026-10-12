@@ -146,7 +146,7 @@ export function BudgetTrackerView({ initialSnapshot, initialBudgets }: Props) {
   const startDateValue = snapshot.budget.start_date.slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3] text-stone-900 dark:bg-[#0f0f0f] dark:text-stone-100">
+    <div className="min-h-100 bg-[#f7f6f3] text-stone-900 dark:bg-[#0f0f0f] dark:text-stone-100">
       <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-[#1a1a1a]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <Link href="/" className="font-mono text-lg font-bold tracking-tight dark:text-stone-100">
