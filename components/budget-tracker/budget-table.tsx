@@ -122,15 +122,12 @@ export function BudgetTable({ snapshot, onRefresh }: Props) {
       cell: ({ row }) => {
         const r = row.original;
         const pence = r.cells[col] ?? 0;
-        const isStart = col === startColumnKey;
 
         return (
           <AmountCell
             valuePence={pence}
             disabled={r.kind === "total"}
             variant={r.kind === "total" ? "total" : r.kind === "savings" ? "savings" : "debt"}
-            showProgress={r.kind === "debt" && !isStart}
-            startingPence={r.startingPence}
             onCommit={(amountPence) =>
               upsertCell(budget.id, col, r, amountPence)
             }

@@ -8,8 +8,6 @@ type Props = {
   valuePence: number;
   disabled?: boolean;
   variant?: "debt" | "total" | "savings";
-  showProgress?: boolean;
-  startingPence?: number;
   onCommit: (pence: number) => Promise<void>;
 };
 
@@ -17,8 +15,6 @@ export function AmountCell({
   valuePence,
   disabled,
   variant = "debt",
-  showProgress,
-  startingPence = 0,
   onCommit,
 }: Props) {
   const [editing, setEditing] = useState(false);
@@ -52,11 +48,6 @@ export function AmountCell({
       setEditing(false);
     }
   }
-
-  const progress =
-    showProgress && startingPence > 0
-      ? Math.min(100, Math.max(0, ((startingPence - valuePence) / startingPence) * 100))
-      : null;
 
   const textClass =
     variant === "total"
@@ -95,20 +86,13 @@ export function AmountCell({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "group relative w-full min-w-[5.5rem] rounded px-2 py-1.5 text-left text-sm tabular-nums transition-colors hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40",
+        "w-full min-w-[5.5rem] rounded px-2 py-1.5 text-left text-sm tabular-nums transition-colors hover:bg-stone-100 dark:hover:bg-stone-800/60",
         textClass,
         saving && "opacity-60",
       )}
       title="Click to edit"
     >
-      {progress !== null && (
-        <span
-          className="pointer-events-none absolute inset-y-1 left-1 rounded bg-emerald-100/90 transition-all dark:bg-emerald-900/50"
-          style={{ width: `calc(${progress}% - 4px)`, maxWidth: "calc(100% - 8px)" }}
-          aria-hidden
-        />
-      )}
-      <span className="relative">{formatGBP(valuePence)}</span>
+      {formatGBP(valuePence)}
     </button>
   );
 }
